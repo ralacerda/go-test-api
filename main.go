@@ -7,10 +7,7 @@ import (
 	"time"
 )
 
-func sucessHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Request received!")
-
-	w.WriteHeader(http.StatusOK)
+func delayMiddleware(r *http.Request) error {
 	delay := r.URL.Query().Get("delay")
 
 	fmt.Println(delay)
@@ -18,14 +15,27 @@ func sucessHandler(w http.ResponseWriter, r *http.Request) {
 	if delay != "" {
 		delayDuration, err := strconv.Atoi(delay)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("Internal Server Error!"))
-			return
+			return err
 		}
 
 		time.Sleep(time.Second * time.Duration(delayDuration))
 	}
 
+	return nil
+}
+
+func sucessHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Request received!")
+
+	err := delayMiddleware(r)
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Invalid delay parameter!"))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Hello World!"))
 }
 
